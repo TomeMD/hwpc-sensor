@@ -18,6 +18,7 @@ set(SENSOR_SOURCES
     src/target.c
     src/target_docker.c
     src/target_kubernetes.c
+    src/target_apptainer.c
     src/pmu.c
     src/events.c
     src/hwinfo.c

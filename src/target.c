@@ -40,6 +40,7 @@
 #include "target.h"
 #include "target_docker.h"
 #include "target_kubernetes.h"
+#include "target_apptainer.h"
 
 const char *target_types_name[] = {
     [TARGET_TYPE_UNKNOWN] = "unknown",
@@ -50,6 +51,7 @@ const char *target_types_name[] = {
     [TARGET_TYPE_KUBERNETES] = "k8s",
     [TARGET_TYPE_LIBVIRT] = "libvirt",
     [TARGET_TYPE_LXC] = "lxc",
+    [TARGET_TYPE_APPTAINER] = "apptainer",
 };
 
 enum target_type
@@ -58,6 +60,9 @@ target_detect_type(const char *cgroup_path)
     /* All running processes/threads (not a cgroup) */
     if (!cgroup_path)
         return TARGET_TYPE_ALL;
+
+    if (strstr(cgroup_path, "perf_event/system.slice"))
+	    return TARGET_TYPE_APPTAINER;
 
     /* System (running processes/threads in system cgroup) */
     if (strstr(cgroup_path, "perf_event/system"))
@@ -129,6 +134,10 @@ target_resolve_real_name(struct target *target)
 
         case TARGET_TYPE_KUBERNETES:
             target_real_name = target_kubernetes_resolve_name(target);
+            break;
+
+        case TARGET_TYPE_APPTAINER:
+            target_real_name = target_apptainer_resolve_name(target);
             break;
 
         case TARGET_TYPE_ALL:
