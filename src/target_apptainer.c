@@ -42,7 +42,7 @@
  * CONTAINER_ID_REGEX is the regex used to extract the Apptainer container id from the cgroup path.
  * CONTAINER_ID_REGEX_EXPECTED_MATCHES is the number of expected matches from the regex. (num groups + 1)
  */
-#define CONTAINER_ID_REGEX "perf_event/system.slice/apptainer-[0-9]+$"
+#define CONTAINER_ID_REGEX "perf_event/system.slice/apptainer-([0-9]+)\\.scope"
 #define CONTAINER_ID_REGEX_EXPECTED_MATCHES 2
 
 
@@ -50,18 +50,22 @@ char *
 target_apptainer_resolve_name(struct target *target)
 {
     regex_t re;
-    regmatch_t matches[CONTAINER_NAME_REGEX_EXPECTED_MATCHES];
+    regmatch_t matches[CONTAINER_ID_REGEX_EXPECTED_MATCHES];
     char *target_id = NULL;
-    char *target_name[20];
+    char *target_name = NULL;
+    size_t target_name_size;
 
 
     if (!regcomp(&re, CONTAINER_ID_REGEX, REG_EXTENDED | REG_NEWLINE)) {
-        if (!regexec(&re, target->cgroup_path, CONTAINER_NAME_REGEX_EXPECTED_MATCHES, matches, 0))
+        if (!regexec(&re, target->cgroup_path, CONTAINER_ID_REGEX_EXPECTED_MATCHES, matches, 0)) {
             target_id = strndup(target->cgroup_path + matches[1].rm_so, matches[1].rm_eo - matches[1].rm_so);
             if (target_id != NULL) {
-                snprintf(target_name, sizeof(target_name), "apptainer-%s", target_id);
+                target_name_size = strlen("apptainer-") + strlen(target_id) + 1;
+                target_name = (char *)malloc(target_name_size * sizeof(char));
+                snprintf(target_name, target_name_size, "apptainer-%s", target_id);
                 free(target_id);
             }
+        }
         regfree(&re);
     }
 
